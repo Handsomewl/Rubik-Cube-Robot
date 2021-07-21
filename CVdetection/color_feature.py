@@ -1,9 +1,10 @@
- # -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 '''
 颜色特征识别
 '''
 import numpy as np
 import cv2
+
 
 def color_block_finder(img, LowUp_range, all_rects, min_w=0, max_w=None, min_h=0, max_h=None):
     '''
@@ -14,19 +15,28 @@ def color_block_finder(img, LowUp_range, all_rects, min_w=0, max_w=None, min_h=0
     img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     # 根据颜色阈值转换为二值化图像
+    # 原本有一个HSV图像，然后通过这个函数转换为只有黑白两种颜色的点，然后黑色点对应原图中不在阈值范围内的点，白色点对应在阈值范围内的点；
+    # 会用到去噪函数，会有一些零散的白色点，去噪函数，白色点变成黑色点
+    # 会剩下一个较大的白色点连通区域，提取轮廓函数，可以看成魔方的1/9块；
+    # 6个颜色确定的阈值逐个遍历；
+
     img_bin = None
     for lowerb, upperb in LowUp_range:
         if img_bin is None:
             img_bin = cv2.inRange(img_hsv, lowerb, upperb)
         else:
-            img_bin = cv2.bitwise_or(img_bin, cv2.inRange(img_hsv, lowerb, upperb))
+            img_bin = cv2.bitwise_or(
+                img_bin, cv2.inRange(img_hsv, lowerb, upperb))
+    # 取或操作
 
-    #开操作
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(3, 3))
+    # 开操作
+    # 构建一个腐蚀核，把连通区域的细线联通给腐蚀掉；
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     img_bin = cv2.morphologyEx(img_bin, cv2.MORPH_OPEN, kernel)
 
     # 寻找轮廓（只寻找最外侧的色块）
-    contours, hier = cv2.findContours(img_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hier = cv2.findContours(
+        img_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # 声明画布 拷贝自img
     canvas = np.copy(img)
     # 外接矩形区域集合
@@ -36,22 +46,22 @@ def color_block_finder(img, LowUp_range, all_rects, min_w=0, max_w=None, min_h=0
         # 如果最大宽度没有设定，就设定为图像的宽度
         max_w = img.shape[1]
     if max_h is None:
-        # 如果最大高度没有设定，就设定为图像的高度 
+        # 如果最大高度没有设定，就设定为图像的高度
         max_h = img.shape[0]
-        
+
     # 遍历所有的边缘轮廓集合
-    for cidx,cnt in enumerate(contours):
+    for cidx, cnt in enumerate(contours):
         # 获取联通域的外界矩形
         (x, y, w, h) = cv2.boundingRect(cnt)
 
-        if w >= min_w and w <= max_w and h >= min_h and h <= max_h and max(w,h) < 1.34*min(w,h):
+        if w >= min_w and w <= max_w and h >= min_h and h <= max_h and max(w, h) < 1.34*min(w, h):
             # 将矩形的信息(tuple)添加到rects中
             rects.append((x, y, w, h))
             all_rects.append((x, y, w, h))
     return img_bin, rects
-    
 
-def draw_color_block_rect(img, rects,color=(0, 0, 255)):
+
+def draw_color_block_rect(img, rects, color=(0, 0, 255)):
     '''
     返回绘制后图像
     '''
@@ -61,6 +71,7 @@ def draw_color_block_rect(img, rects,color=(0, 0, 255)):
     for rect in rects:
         (x, y, w, h) = rect
         # 在画布上绘制矩形区域（红框）
-        cv2.rectangle(canvas, pt1=(x, y), pt2=(x+w, y+h),color=color, thickness=3)
-    
+        cv2.rectangle(canvas, pt1=(x, y), pt2=(
+            x+w, y+h), color=color, thickness=3)
+
     return canvas

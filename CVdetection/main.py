@@ -49,7 +49,10 @@ def color_recognition(img, img_sort):
         min_l = min(img.shape[1]/6, img.shape[0]/6)
         max_l = min(img.shape[1]/3, img.shape[0]/3)        
 
-    #rects区域
+    # 前景提取：提取出魔方的大致区域，在魔方在图像中的占比大致为90%以上；
+
+    # rects区域
+    # 确定6种颜色对应的矩形区域；
     all_rects = []
     img_bin, white_rects = color_block_finder(img, [[white_lower, white_upper]], all_rects, min_l, max_l, min_l, max_l)
     img_bin, red_rects = color_block_finder(img, [[red_1_lower, red_1_upper], [red_2_lower, red_2_upper]], all_rects, min_l, max_l, min_l, max_l)
@@ -59,6 +62,7 @@ def color_recognition(img, img_sort):
     img_bin, blue_rects = color_block_finder(img, [[blue_lower, blue_upper]], all_rects, min_l, max_l, min_l, max_l)
 
     #画图
+    #把6种颜色区域的边框绘制在原图像上，可以确定是否找对了魔方区域；
     img_draw = img.copy()
     img_draw = draw_color_block_rect(img_draw, white_rects, (245,245,245))
     img_draw = draw_color_block_rect(img_draw, red_rects, (42,42,165))
@@ -71,7 +75,9 @@ def color_recognition(img, img_sort):
     #分析
     return analyse.analyse_color(all_rects, white_rects, red_rects, orange_rects, yellow_rects, green_rects, blue_rects)
         
+
 def get_video_rect(img):
+    # 从摄像头获得一张图片；
     '''
     ->img_draw
     '''
@@ -128,12 +134,11 @@ if __name__ == '__main__':
             cv2.imshow('video', img_rect)
 
             key = cv2.waitKey(50)
+            # key是键盘上输入；
 
             #确定
             if key == 32:
-                #方案一：前景提取
-                # color_str = get_color_str(img)
-                #方案二：直接阈值识别
+                #方案二：直接阈值识别，包含前景提取；
                 img = img[bgy:img.shape[0]-bgy, bgx:img.shape[1]-bgx]
                 color_map, color_str = color_recognition(img, 1)
                 break
